@@ -1,0 +1,178 @@
+//programa za s2 mini so 5003 senzor
+//Od internet dodadena LiquidCrystal_I2C bibiotekata. Najverojatno slednata https://github.com/johnrickman/LiquidCrystal_I2C
+//
+//#include "PMS.h"      //korisna samo za pm cesticki, <PMserial.h> ima i za temperatura i vlaznost
+#include <PMserial.h> 
+#include <WiFiManager.h>
+
+#include <WiFi.h>
+#include "ThingSpeak.h"
+#include <HardwareSerial.h>
+#include <Wire.h>
+
+#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoMatrix.h>
+
+#define PIN 5
+
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(32, 8, PIN,
+                            NEO_MATRIX_TOP + NEO_MATRIX_LEFT +
+                            NEO_MATRIX_ROWS + NEO_MATRIX_ZIGZAG,
+                            NEO_GRB + NEO_KHZ800);
+
+const uint16_t colors[] = {
+  matrix.Color(0, 0, 255), matrix.Color(0, 0, 255), matrix.Color(0, 0, 255)
+ 
+};
+
+int x1= matrix.width();
+
+int pass = 0;
+
+#if !defined(PMS_RX) && !defined(PMS_TX)
+constexpr auto PMS_RX = 10;
+constexpr auto PMS_TX = 11;
+#endif
+
+//potencijalen bug kaj prviot argument
+SerialPM pms(PMS5003, PMS_RX, PMS_TX);
+
+//char* ssid = "Mi A3"; //vnesi SSID   (Mi A3)
+//char* password = "qwerrewq"; // vnesi pasword  (qwerrewq)
+
+WiFiServer server(80);
+WiFiClient client;      //za povrzuvanje so ThingSpeak
+
+//-----ThingSpeak channel details---------
+unsigned long myChannelNumber = 2475442;        //Chanel settings -> Chanel ID  
+const char* myWriteAPIKey = "0MAS59QMJS0N1SV2"; //API Keys
+ 
+
+ 
+int x;
+ 
+float v1, v2, v3;
+
+String val1;
+String val2;
+String val3;
+
+  
+void setup()
+{
+
+
+  matrix.begin();
+  matrix.setTextWrap(false);
+  matrix.setBrightness(6);
+  matrix.setTextColor(colors[0]);
+  WiFiManager wm;
+ // wm.resetSettings();
+  bool res; // result promenliva od tip bool
+ // Wire.setPins(12, 13);
+  //lcd.init();
+  //lcd.backlight();
+
+  //Serial1.setPins(4,5);
+  Serial.begin(9600);
+  //Serial1.begin(9600);
+
+  res = wm.autoConnect("NashaAP", "password"); // vraja bool, ili true ili false 
+
+  if(!res)
+  {
+    Serial.println("Ne se povrza!");
+  }
+  else
+  {
+    Serial.println("Se povrza!");
+  }
+
+  
+  server.begin();    //Initialize  srw 
+  ThingSpeak.begin(client);
+ 
+  pms.init();
+}
+ 
+void loop()
+{
+
+  pms.read();
+  
+  
+
+  if(pms)
+  {
+   
+ 
+ //Printa na ekran od kompjuter?
+            Serial.println("Air Quality Monitor");
+
+              Serial.print(F("PM1.0 "));
+            Serial.print(pms.pm01);
+            Serial.print(F(", "));
+            Serial.print(F("PM2.5 "));
+            Serial.print(pms.pm25);
+            Serial.print(F(", "));
+            Serial.print(F("PM10 "));
+            Serial.print(pms.pm10);
+            Serial.println(F(" [ug/m3]"));
+
+            
+ 
+    if (pms.has_temperature_humidity() || pms.has_formaldehyde())
+    {
+     Serial.print(pms.temp, 1);
+      Serial.print(F(" °C"));
+      Serial.print(F(", "));
+      Serial.print(pms.rhum, 1);
+      Serial.print(F(" %rh"));
+      Serial.print(F(", "));
+      Serial.print(pms.hcho, 2);
+      Serial.println(F(" mg/m3 HCHO"));
+    }
+ 
+    Serial.println("");
+        
+ 
+   
+    
+  }
+
+
+    ThingSpeak.setField(1, pms.pm01);      //1 field e val1
+    ThingSpeak.setField(2, pms.pm25);      //1 field e val2
+    ThingSpeak.setField(3, pms.pm10);      //1 field e val3
+
+
+    matrix.fillScreen(0);
+    matrix.setCursor(x1, 0);
+    matrix.print(F("PM1.0 "));
+    //matrix.print(F(pms.pm01));
+
+            
+
+
+    if(--x1 < -36) {
+    x1 = matrix.width();
+    if(++pass >= 3) pass = 0;
+    matrix.setTextColor(colors[pass]);
+    }
+    matrix.show();
+    delay(2050);
+
+    x = ThingSpeak.writeFields(myChannelNumber,myWriteAPIKey);
+
+    if(x == 200)
+    {
+     Serial.println("Channel update successful.");    //uspesno pakjanje na podatoci 
+    }
+    else
+    {
+     Serial.println("Problem updating channel. HTTP error code " + String(x));
+    }
+  
+}
+
+ 
