@@ -1,10 +1,10 @@
 # VMS_Merach_PM_chesticki
 
-Description:
+##Description:
 
 This Arduino code is designed for an air quality monitoring system utilizing the S2 Mini sensor with the PMS5003 sensor module. It also includes functionalities for connecting to the internet via WiFi and uploading data to ThingSpeak for remote monitoring and analysis.
 
-Libraries Used:
+##Libraries Used:
 
 LiquidCrystal_I2C: This library facilitates the interfacing of the liquid crystal display (LCD) via I2C communication. It's likely sourced from johnrickman's repository.
 PMS: This library provides support for the PMS series of air quality sensors, specifically for particulate matter (PM) measurements.
@@ -16,7 +16,8 @@ Adafruit_NeoMatrix: Extends NeoPixel functionality to matrices for displaying te
 Pin Configuration:
 
 The NeoMatrix is configured with PIN 5 for communication with the NeoPixel LED matrix.
-Variables:
+
+##Variables:
 
 x1: Stores the current position for text scrolling on the NeoMatrix.
 pass: Used for cycling through colors on the NeoMatrix.
